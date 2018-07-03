@@ -1,3 +1,5 @@
+//Visual Summaries of fields in a dataset.
+
 var summaryCard = function(svg,data,name){
   //Summary Card is a monopoly card that contains information about a field:
   //Name. Type. Summary Stats
