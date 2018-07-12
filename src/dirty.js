@@ -52,7 +52,7 @@ var drop = function(datum,field,MODE){
     let k = Object.keys(data[0]);
     let remove = x ? x : k[~~(Math.random() * k.length)];
     data.forEach(function(d){
-      d = drop(d,remove,"d");
+      d = drop(d,remove,mode);
     });
     return data;
   }
