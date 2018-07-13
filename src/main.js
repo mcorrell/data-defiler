@@ -34,7 +34,7 @@ var summaryCard = function(svg,data,name){
   cHeight = cHeight ? cHeight : parseFloat(svg.attr("height"));
 
   xScale.range([0,cWidth]);
-  let yScale = d3.scaleLinear().domain(dl.extent(density,d => d[1])).range([cHeight-14,14]);
+  let yScale = d3.scaleLinear().domain(dl.extent(density,d => d[1])).range([(.9*cHeight)-14,14]);
 
   svg.append("text")
     .attr("x",5)
@@ -66,6 +66,62 @@ var summaryCard = function(svg,data,name){
     .classed("ci_kde",true)
     .attr("d", area);
 
+  let axis = d3.axisBottom(xScale);
+
+  svg.append("g")
+    .attr("transform","translate(0,"+( (cHeight*.9) - 14)+")")
+    .classed("axis",true)
+    .call(axis);
+
+}
+
+var interactionCard = function(svg,data,x,y){
+  //The Interaction Card is a monopoly card that cointains information
+  //About the interaction between two fields.
+  //It also contains some information about what might be weird or interesting
+  //About the interaction.
+
+  //Scatterplot
+  //Marginal KDE
+  //Trend line
+  //Confidence band?
+
+  //prep for drawing
+  let cWidth = svg ? parseFloat(svg.style("width")) : 300;
+  cWidth = cWidth ? cWidth : parseFloat(svg.attr("width"));
+  cHeight = svg ? parseFloat(svg.style("height")) : 300;
+  cHeight = cHeight ? cHeight : parseFloat(svg.attr("height"));
+
+  //want scatterplot to be square
+  cHeight = Math.min(cHeight,cWidth);
+
+  let scatter = svg.append("g");
+  let margins = cHeight*0.1;
+  let xScale = d3.scaleLinear().domain(dl.extent(data,x)).range([margins,cWidth-margins]);
+  let yScale = d3.scaleLinear().domain(dl.extent(data,y)).range([cHeight-margins,margins]);
+  let opacity = Math.min((1/Math.log2(data.length)),1);
+  let xAxis = d3.axisBottom(xScale);
+  let yAxis = d3.axisLeft(yScale);
+
+  //draw scatterplot
+  scatter.selectAll("circle").data(data).enter().append("circle")
+    .classed("scatter",true)
+    .attr("cx",d => xScale(d[x]))
+    .attr("cy",d => yScale(d[y]))
+    .attr("opacity",opacity)
+    .attr("r","5px");
+
+
+
+  svg.append("g")
+    .attr("transform","translate(0,"+(cHeight-margins)+")")
+    .classed("axis",true)
+    .call(xAxis);
+
+  svg.append("g")
+      .classed("axis",true)
+      .attr("transform","translate("+margins+",0)")
+      .call(yAxis);
 }
 
 var data;

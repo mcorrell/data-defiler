@@ -3,7 +3,9 @@ body {
 }
 
 .main {
-  width: 60%;
+  position: absolute;
+  left: 30%;
+  width: 65%;
   height: 100%;
 }
 
@@ -18,7 +20,8 @@ body {
 .summaryCard {
   width: 95%;
   height: 100%;
-  margin-bottom: 5px;
+  margin-top: 2.5px;
+  margin-bottom: 2.5px;
   align-self: center;
   border-style: solid;
   border-color: #333;
@@ -35,5 +38,20 @@ body {
 }
 
 .ci_kde {
+  fill: #333;
+}
+
+.axis {
+  font-family: futura, sans-serif;
+}
+
+.interactionCard {
+  width: 95%;
+  height: 95%;
+  display: block;
+  margin: auto;
+}
+
+.scatter {
   fill: #333;
 }
