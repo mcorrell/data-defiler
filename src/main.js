@@ -30,7 +30,7 @@ var summaryCard = function(svg,data,name){
   //prep for drawing
   let cWidth = svg ? parseFloat(svg.style("width")) : 150;
   cWidth = cWidth ? cWidth : parseFloat(svg.attr("width"));
-  cHeight = svg ? parseFloat(svg.style("height")) : 50;
+  let cHeight = svg ? parseFloat(svg.style("height")) : 50;
   cHeight = cHeight ? cHeight : parseFloat(svg.attr("height"));
 
   xScale.range([0,cWidth]);
@@ -89,7 +89,7 @@ var interactionCard = function(svg,data,x,y){
   //prep for drawing
   let cWidth = svg ? parseFloat(svg.style("width")) : 300;
   cWidth = cWidth ? cWidth : parseFloat(svg.attr("width"));
-  cHeight = svg ? parseFloat(svg.style("height")) : 300;
+  let cHeight = svg ? parseFloat(svg.style("height")) : 300;
   cHeight = cHeight ? cHeight : parseFloat(svg.attr("height"));
 
   //want scatterplot to be square
