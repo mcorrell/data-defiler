@@ -317,7 +317,7 @@ var interactionCard = function(svg,data,x,y){
 
 
 var data;
-dl.csv("data/per_game_data.csv",doneLoading);
+dl.csv("data/iris.csv",doneLoading);
 
 function doneLoading(err,d){
   if(err){
@@ -328,7 +328,7 @@ function doneLoading(err,d){
     data = d;
     let types = dl.type.all(data);
     //filter to only numeric fields for this prototype
-    let keys = Object.keys(data[0]);
+    let keys = Object.keys(data[0]).filter(d => types[d]!="date");
 
     let cards = d3.select("#summaries").selectAll("svg").data(keys).enter().append("svg")
       .classed("summaryCard",true);
