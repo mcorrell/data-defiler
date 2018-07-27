@@ -39,13 +39,14 @@ var standardize = function(data,x){
 }
 
 var validateTrend = function(data,x,y,numSamples){
+  let sanitizedData = data.filter(d => dl.isValid(d[x]) && dl.isValid(d[y]));
   //robustness of a linear trend between x and y
   let statistic = function(d){
     return dl.linearRegression(d,x,y);
   }
-  let samples = bootstrap(data,statistic,numSamples);
+  let samples = bootstrap(sanitizedData,statistic,numSamples);
   //generate a marginal histogram of the last values
-  let lastX = dl.max(data,x);
+  let lastX = dl.max(sanitizedData,x);
   let lastXs = samples.map( d => d.intercept + (d.slope*lastX));
   return {"lastX": dl.histogram(lastXs), "slope": dl.histogram(samples.map(d => d.slope))};
 }
@@ -65,6 +66,24 @@ var validateOutlier = function(data,x,alpha,numSamples){
   return {"c0": dl.histogram(samples.map(d => d.c0)), "c1": dl.histogram(samples.map(d => d.c1))};
 }
 
-var vaidateDifference = function(data,x1,x2,agg,numSamples){
-  
+var validateDifference = function(data,x,x1,x2,y,numSamples){
+  //robustness of a difference between two values x1 and x2 in a cateogrical field x,
+  //where y is some function that is a statistic of interest, e.g.
+  // function(d){ return dl.mean(d,"petal_width")}, say.
+  let str = x1+"-"+x2;
+  let statistic = function(d){
+    let val1 = y(d.filter(d => d[x]==x1));
+    let val2 = y(d.filter(d => d[x]==x2));
+    let obj = {};
+    obj[x1] = val1;
+    obj[x2] = val2;
+    obj[str] = val1-val2;
+    return obj;
+  }
+  let samples = bootstrap(data,statistic,numSamples);
+  let obj = {};
+  obj[x1] = dl.histogram(samples.map(d => d[x1]));
+  obj[x2] = dl.histogram(samples.map(d => d[x2]));
+  obj[str] = dl.histogram(samples.map(d => d[str]))
+  return obj;
 }
