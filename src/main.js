@@ -1,6 +1,9 @@
 //Visual Summaries of fields in a dataset.
 
 var summaryCard = function(svg,data,name,type){
+  let obj = {"name": name, "type": type};
+  svg.datum(obj);
+
   switch (type){
     case "number":
     summaryCardNumber(svg,data,name);
@@ -46,7 +49,7 @@ var summaryCardNumber = function(svg,data,name){
   cHeight = cHeight ? cHeight : parseFloat(svg.attr("height"));
 
   xScale.range([margin,cWidth]);
-  let yScale = d3.scaleLinear().domain(dl.extent(density,d => d[1])).range([(.9*cHeight)-margin,2*margin]);
+  let yScale = d3.scaleLinear().domain([0,dl.max(density,d => d[1])]).range([(.9*cHeight)-margin,2*margin]);
 
   svg.append("text")
     .attr("x",5)
@@ -101,7 +104,7 @@ var summaryCardCategorical = function(svg,data,name){
   }
   let maxCount = dl.max(vals.map(d => map[d]));
   //make our histograms
-  let xScale = d3.scaleBand().domain(vals);
+  let xScale = d3.scaleBand().domain(vals).padding(0.05);
 
   //prep for drawing
   let margin = 14;
@@ -152,7 +155,7 @@ var summaryCardBigCategorical = function(svg,data,name){
   let topN = valCounts.filter((d,i) => i<=n-1);
   let maxCount = topN[0].count;
   //make our histograms
-  let xScale = d3.scaleBand().domain(topN.map(d => d.name));
+  let xScale = d3.scaleBand().domain(topN.map(d => d.name)).padding(0.05);
 
   //prep for drawing
   let margin = 14;
@@ -207,7 +210,7 @@ var summaryCardInteger = function(svg,data,name){
   let sigma = dl.stdev(data);
   let ci = [mu-sigma,mu+sigma];
   let uniques = dl.count.valid(dl.unique(data));
-  if(uniques<=2){
+  if(uniques<=10){
     summaryCardCategorical(svg,data,name);
     return;
   }
@@ -276,7 +279,6 @@ var interactionCard = function(svg,data,x,y){
   //Marginal KDE
   //Trend line
   //Confidence band?
-
   //prep for drawing
   let cWidth = svg ? parseFloat(svg.style("width")) : 300;
   cWidth = cWidth ? cWidth : parseFloat(svg.attr("width"));
