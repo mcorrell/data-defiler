@@ -41,6 +41,10 @@ body {
   fill: #333;
 }
 
+.ci_histbar {
+  fill: #333;
+}
+
 .axis {
   font-family: futura, sans-serif;
 }
