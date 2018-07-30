@@ -3,7 +3,6 @@ var bootstrap = function(data, statistic, numSamples = 1000){
   //Statistic is a function that we use to reduce the data.
   //For instance, "dl.mean" would return the mean of each bootstapped sample.
   let n = data.length;
-
   let sampler = function(){
     return data[~~(Math.random() * n)];
   };
@@ -15,7 +14,7 @@ var bootstrap = function(data, statistic, numSamples = 1000){
   return  dl.zeros(numSamples).map(oneSample);
 }
 
-var kde = function(data,samples){
+var kde = function(data,samples = 100){
   let n = data.length;
   let sigma = dl.stdev(data);
   let extent = dl.extent(data);
@@ -23,7 +22,6 @@ var kde = function(data,samples){
   let bandwidth = Math.pow((4*Math.pow(sigma,5)/(3*n)),0.2);
   bandwidth/=4;
   let kernel = dl.random.normal(0,bandwidth);
-  samples = samples ? samples : 100;
 
   //run KDE
   let xScale = d3.scaleLinear().domain(extent);
@@ -51,16 +49,12 @@ var validateTrend = function(data,x,y,numSamples){
   return {"lastX": dl.histogram(lastXs), "slope": dl.histogram(samples.map(d => d.slope))};
 }
 
-var validateOutlier = function(data,x,alpha,numSamples){
+var validateOutlier = function(data,x,alpha = 0.95,numSamples){
   //robustness of the outlier fences
-  alpha = alpha ? alpha : 0.95;
-  let cutoffZ = dl.random.normal().icdf(1 - ((1-alpha)/2));
   let statistic = function(d){
-    let sigma = dl.stdev(d,x);
-    let mu = dl.mean(d,x);
-    let c0 = mu - (cutoffZ*sigma);
-    let c1 = mu + (cutoffZ*sigma);
-    return {"c0": c0, "c1": c1 };
+    let qs = dl.quartile(d,x);
+    let iqr = qs[2] - qs[0];
+    return {"c0": qs[0] - (1.5 * iqr), "c1": qs[2] + (1.5 * iqr) };
   }
   let samples = bootstrap(data,statistic,numSamples);
   return {"c0": dl.histogram(samples.map(d => d.c0)), "c1": dl.histogram(samples.map(d => d.c1))};
