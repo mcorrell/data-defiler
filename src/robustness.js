@@ -1,10 +1,15 @@
 
+// create numSamples bootstrap samples and compute given statistic over each
+//   * data: list of values
+//   * statistic: scalar function of a list of values
+//     e.g. "dl.mean" to get the mean from each sample as output
+//   * numSamples: number of bootstrap samples to make
+//  ** returns a list of values from running statistic over
+//     each generated bootstrap sample: [ statistic(bootstrap_i(data)) ]
 var bootstrap = function(data, statistic, numSamples = 1000){
-  //Statistic is a function that we use to reduce the data.
-  //For instance, "dl.mean" would return the mean of each bootstapped sample.
   let n = data.length;
   let sampler = function(){
-    return data[~~(Math.random() * n)];
+    return data[~~(Math.random() * n)]; // faster than floor?
   };
 
   let oneSample = function(){
@@ -14,6 +19,12 @@ var bootstrap = function(data, statistic, numSamples = 1000){
   return  dl.zeros(numSamples).map(oneSample);
 }
 
+// kernel density estimate (KDE) for a dataset
+//   * data: list of values
+//   * samples: number of samples desired
+//     !! length of return may not equal number of samples
+//  ** returns samples of the KDE (Gaussian) for this data, evenly spaced
+//     [ [x, pdf(x)] ]
 var kde = function(data,samples = 100){
   let n = data.length;
   let sigma = dl.stdev(data);
@@ -23,12 +34,18 @@ var kde = function(data,samples = 100){
   bandwidth/=4;
   let kernel = dl.random.normal(0,bandwidth);
 
-  //run KDE
+  // kernel density estimate (KDE) based on the data
+  // ! scaleLinear().ticks does not always give expected no. of samples
+  // [kernel is computed per point x: the mean of gauss kernel distances to x]  
   let xScale = d3.scaleLinear().domain(extent);
   let density = xScale.ticks(samples).map( x => [x, d3.mean(data, d => kernel.pdf(x-d))]);
   return density;
 }
 
+// standardize dataset
+//   * data: either a list of values or a list of dictionaries
+//   * x: if data is a list of dictionaries, this specifies key to use
+//  ** returns list of values, standardized
 var standardize = function(data,x){
   let vals = x ? data.map(d => d[x]) : data;
   let sigma = dl.stdev(vals);
@@ -36,13 +53,21 @@ var standardize = function(data,x){
   return vals.map(d => (d-mu)/sigma);
 }
 
+// evaluate the robustness of a linear trend between variables named
+// x and y in data using numSamples bootstrapped samples of data
+// subsets to only valid (dl.isValid) x,y pairs in data
+//   * data: must be list of dictionaries (keys are var names)
+//   * x,y: names of variables to use (y as trend of x)
+//   * numSamples: number of bootstrap samples to use
+//  ** 
 var validateTrend = function(data,x,y,numSamples){
   let sanitizedData = data.filter(d => dl.isValid(d[x]) && dl.isValid(d[y]));
-  //robustness of a linear trend between x and y
-  let statistic = function(d){
-    return dl.linearRegression(d,x,y);
-  }
+  
+  // take numSamples bootstrapped samples and run statistic (linear regression)
+  // return is, for each bootstrapped sample, {slope, intercept, R, rss}
+  let statistic = function(d){ return dl.linearRegression(d,x,y); }
   let samples = bootstrap(sanitizedData,statistic,numSamples);
+
   //generate a marginal histogram of the last values
   let lastX = dl.max(sanitizedData,x);
   let lastXs = samples.map( d => d.intercept + (d.slope*lastX));

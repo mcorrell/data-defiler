@@ -205,7 +205,7 @@ loess = function() {
   }
 
   return newobj;
-}();
+};
 
 // median function cobbled into one piece from science.js
 function median(x) {
