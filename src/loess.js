@@ -15,6 +15,14 @@ loess = function() {
       robustnessIters = 2,
       accuracy = 1e-12;
 
+  // keep X data and some intermediate info used to fit model
+  var _xvals, bandwidthInPoints;
+
+  // storage of the models created during smoothing
+  // [ { alpha, beta }] with list indices matching data
+  var models = [],
+      modelIsFit = false;
+
   //// these work as getters (by #arg check) and setters
   newobj.bandwidth = function(b) {
     if (!arguments.length) return bandwidth;
@@ -80,7 +88,9 @@ loess = function() {
   }
 
   //// calculated a smoothed version of the data
-  newobj.smooth = function(xval, yval, weights) {
+  // returns the smoothed version and saves models involved for 'predict'
+  newobj.fit = function(xval, yval, weights) {
+    _xvals = xval; // save data for use fitting models
     var n = xval.length,
         i;
 
@@ -100,7 +110,7 @@ loess = function() {
     if (n == 1) return [yval[0]];
     if (n == 2) return [yval[0], yval[1]];
 
-    var bandwidthInPoints = Math.floor(bandwidth * n);
+    bandwidthInPoints = Math.floor(bandwidth * n);
 
     if (bandwidthInPoints < 2) throw {error: "Bandwidth too small."};
 
@@ -115,6 +125,7 @@ loess = function() {
       res[i] = 0;
       residuals[i] = 0;
       robustnessWeights[i] = 1;
+      models[i] = {}
     }
 
     var iter = -1;
@@ -175,8 +186,12 @@ loess = function() {
 
         var alpha = meanY - beta * meanX;
 
+        // store smoothed result at this index  & residual
         res[i] = beta * x + alpha;
         residuals[i] = Math.abs(yval[i] - res[i]);
+
+        // store model learned for this index
+        models[i] = {'beta': beta, 'alpha': alpha};
       }
 
       // No need to recompute the robustness weights at the last
@@ -201,7 +216,111 @@ loess = function() {
       }
     }
 
+    modelIsFit = true;
     return res;
+  }
+
+
+  // helper function to get index of closest x val in our data
+  function closest(x, L, ileft, iright){
+    let leftval = L[ileft],
+        rightval = L[iright],
+        gap = iright - ileft;
+
+    if (leftval == x) return ileft;
+    if (rightval == x) return iright;
+
+    if (gap == 1) { // two items left
+      console.log("gap" + leftval + " " + rightval);
+      if (Math.abs(rightval - x) > Math.abs(leftval - x)) return ileft;
+      return iright;
+    }
+
+    // closest item is either left, right, or inside of the gap
+    let isplit = ileft + Math.floor(gap / 2),
+        splitvalL = L[isplit],
+        splitvalR = L[isplit+1];
+
+    if (x < splitvalL) {
+      console.log("x<split" + x + " " + L[isplit]);
+      return closest(x, L, ileft, isplit);
+    }
+    if (x > splitvalR) {
+      console.log("x>split+1" + x + " " + L[isplit+1]);
+      return closest(x, L, isplit+1, iright);
+    }
+    console.log( "else: " + (splitvalR - x) + " " + isplit);
+    return (Math.abs(splitvalR - x) > Math.abs(splitvalL - x)) ? isplit : Math.min(L.length-1,isplit+1);
+  }
+
+  // helper function for public predict that does it for a single value
+  // NB: assumes models have been fit already (with 'fit')
+  function predictPoint(x) {
+    // Binary search to find index of closest point on either side.
+    // Extend left and right boundaries to get to bandwidthInterval.
+    // For each point in that interval, add weighted estimates to get new est.
+
+  
+
+
+
+
+    // Find out the interval of source points on which
+    // a regression is to be made.
+    //TODO: fix this to take not an index but a value
+    var bandwidthInterval = [0, bandwidthInPoints - 1];
+    science_stats_loessUpdateBandwidthInterval(xval, weights, i, bandwidthInterval);
+    var ileft = bandwidthInterval[0],
+        iright = bandwidthInterval[1];
+
+    // Compute the point of the bandwidth interval that is
+        // farthest from x
+        var edge = (xval[i] - xval[ileft]) > (xval[iright] - xval[i]) ? ileft : iright;
+
+        // Compute a least-squares linear fit weighted by
+        // the product of robustness weights and the tricube
+        // weight function.
+        // See http://en.wikipedia.org/wiki/Linear_regression
+        // (section "Univariate linear case")
+        // and http://en.wikipedia.org/wiki/Weighted_least_squares
+        // (section "Weighted least squares")
+        var sumWeights = 0,
+            sumX = 0,
+            sumXSquared = 0,
+            sumY = 0,
+            sumXY = 0,
+            denom = Math.abs(1 / (xval[edge] - x));
+
+        for (var k = ileft; k <= iright; ++k) {
+          var xk   = xval[k],
+              yk   = yval[k],
+              dist = k < i ? x - xk : xk - x,
+              w    = science_stats_loessTricube(dist * denom) * robustnessWeights[k] * weights[k],
+              xkw  = xk * w;
+          sumWeights += w;
+          sumX += xkw;
+          sumXSquared += xk * xkw;
+          sumY += yk * w;
+          sumXY += yk * xkw;
+        }
+
+
+
+
+
+
+
+  }
+
+  // takes a list of x values (or a single x value) and predicts the y value(s)
+  // given the models saved during 'fit', which must be run first (else exception)
+  newobj.predict = function(X) {
+    if (!modelIsFit) throw( "Cannot use LOESS predict until model is fit.");
+
+    if (Array.isArray(X)){
+      return X.map(predictPoint);
+    }
+    return predictPoint(X);
   }
 
   return newobj;
